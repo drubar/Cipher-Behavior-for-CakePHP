@@ -29,11 +29,11 @@ class CipherBehavior extends ModelBehavior {
 /**
  * Behavior initialization
  *
- * @param mixed $model Current model
+ * @param mixed $Model Current model
  * @param array $config Config settings
  * @return void
  */
-	function setup(&$model, $config = array()) {
+	function setup(Model $Model, $config = array()) {
 		if (!$this->_cipherSeedValidates()) {
 			trigger_error('Security.cipherSeed is invalid', E_USER_ERROR);
 		}
@@ -43,31 +43,31 @@ class CipherBehavior extends ModelBehavior {
 		$this->_defaults['key'] = substr(Configure::read('Security.salt'), 0, 24);
 
 		// Merge config settings with defaults
-		$this->settings[$model->name] = array_merge($this->_defaults, $config);
+		$this->settings[$Model->name] = array_merge($this->_defaults, $config);
 
 		// Set valid values for config settings
-		$this->settings[$model->name]['fields'] = (array) $this->settings[$model->name]['fields'];
-		$this->settings[$model->name]['autoDecrypt'] = (boolean) $this->settings[$model->name]['autoDecrypt'];
-		$this->settings[$model->name]['cipher'] = $this->_cipherMethod($model->name);
+		$this->settings[$Model->name]['fields'] = (array) $this->settings[$Model->name]['fields'];
+		$this->settings[$Model->name]['autoDecrypt'] = (boolean) $this->settings[$Model->name]['autoDecrypt'];
+		$this->settings[$Model->name]['cipher'] = $this->_cipherMethod($Model->name);
 	}
 
 /**
  * Encrypt data on save
  *
- * @param mixed $model Current model
+ * @param mixed $Model Current model
  * @return boolean True to save data
  */
-	function beforeSave(&$model) {
-		if (!array_key_exists($model->name, $this->settings)) {
+	function beforeSave(Model $Model, $options = array()) {
+		if (!array_key_exists($Model->name, $this->settings)) {
 			// This model does not use this behavior
 			return true;
 		}
 
 		// Encrypt each field
-		foreach ($this->settings[$model->name]['fields'] as $field) {
-			if (!empty($model->data[$model->name][$field])) {
+		foreach ($this->settings[$Model->name]['fields'] as $field) {
+			if (!empty($Model->data[$Model->name][$field])) {
 				// Encrypt value
-				$model->data[$model->name][$field] = $this->encrypt($model->data[$model->name][$field], $this->settings[$model->name]);
+				$Model->data[$Model->name][$field] = $this->encrypt($Model->data[$Model->name][$field], $this->settings[$Model->name]);
 			}
 		}
 
@@ -77,28 +77,28 @@ class CipherBehavior extends ModelBehavior {
 /**
  * Decrypt data on find
  *
- * @param mixed $model Current model
+ * @param mixed $Model Current model
  * @param mixed $results The results of the find operation
  * @param boolean $primary Whether this model is being queried directly (vs. being queried as an association)
  * @return mixed Result of the find operation
  */
-	function afterFind(&$model, $results, $primary = false) {
-		if (!$results || !array_key_exists('fields', $this->settings[$model->name])) {
+	function afterFind(Model $Model, $results, $primary = false) {
+		if (!$results || !array_key_exists('fields', $this->settings[$Model->name])) {
 			// No fields to decrypt
 			return $results;
 		}
 
-		if ($primary && $this->settings[$model->name]['autoDecrypt']) {
+		if ($primary && $this->settings[$Model->name]['autoDecrypt']) {
 			// Process all results
 			foreach ($results as &$result) {
-				if (!array_key_exists($model->name, $result)) {
+				if (!array_key_exists($Model->name, $result)) {
 					// Result does not have this model
 					continue;
 				}
 
-				foreach ($result[$model->name] as $field => &$value) {
-					if (in_array($field, $this->settings[$model->name]['fields'])) {
-						$value = $this->decrypt($value, $this->settings[$model->name]);
+				foreach ($result[$Model->name] as $field => &$value) {
+					if (in_array($field, $this->settings[$Model->name]['fields'])) {
+						$value = $this->decrypt($value, $this->settings[$Model->name]);
 					}
 				}
 			}
