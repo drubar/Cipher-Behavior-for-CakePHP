@@ -8,7 +8,7 @@ This plugin behavior handles encrypting and decrypting fields, to store informat
 
 1. Install the plugin as a submodule:
 
-		git submodule add https://github.com/jmillerdesign/Cipher-Behavior-for-CakePHP.git app/Plugin/Cipher
+		git submodule add https://github.com/drubar/Cipher-Behavior-for-CakePHP.git app/Plugin/Cipher
 2. Load the plugin in Config/bootstrap.php
 
 		CakePlugin::load('Cipher');
@@ -24,7 +24,9 @@ This plugin behavior handles encrypting and decrypting fields, to store informat
 
 - fields (array): Fields to cipher. Default: no fields
 - autoDecrypt (boolean): Decrypt ciphered fields automatically. Default: true
-- key (string): Key to encrypt with. Default: Security.salt
-- cipher (string): Cipher method to use (cake OR mcrypt OR auto). Default: auto
+- key (string): Key to encrypt with. Default: Security.key
+- hmacSalt (string): Salt to encrypt aes with. Default: Security.salt
+- cipher (string): Cipher method to use (aes OR rijndael). Default: aes
 
+Forked from:
 [http://jmillerdesign.github.com/Cipher-Behavior-for-CakePHP/](http://jmillerdesign.github.com/Cipher-Behavior-for-CakePHP/)

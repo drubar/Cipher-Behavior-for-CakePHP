@@ -16,14 +16,16 @@ class CipherBehavior extends ModelBehavior {
  * @var array
  *      - fields array Fields to cipher.								DEFAULT: none
  *      - autoDecrypt boolean Decrypt ciphered value automatically.		DEFAULT: true
- *      - key string Key to encrypt with.								DEFAULT: Security.salt
- *      - cipher string Cipher method to use. (cake|mcrypt|auto)		DEFAULT: auto
+ *      - key string Key to encrypt with.								DEFAULT: Security.key
+ *      - hmac salt to encrypt aes with.                                DEFAULT: Security.salt
+ *      - cipher string Cipher method to use. (rijndael|aes)		    DEFAULT: aes
  */
 	var $_defaults = array(
 		'fields' => array(),
 		'autoDecrypt' => true,
 		'key' => '',
-		'cipher' => 'auto'
+		'hmacSalt' => '',
+		'cipher' => 'aes'
 	);
 
 /**
@@ -38,9 +40,11 @@ class CipherBehavior extends ModelBehavior {
 			trigger_error('Security.cipherSeed is invalid', E_USER_ERROR);
 		}
 
-		// Use security salt as default key value
-		// Trim to 24 characters for mcrypt
-		$this->_defaults['key'] = substr(Configure::read('Security.salt'), 0, 24);
+		// Use security key as default key value
+		$this->_defaults['key'] = Configure::read('Security.key');
+
+        // Use security salt as default hmacSalt value
+        $this->_defaults['hmacSalt'] = Configure::read('Security.salt');
 
 		// Merge config settings with defaults
 		$this->settings[$Model->name] = array_merge($this->_defaults, $config);
@@ -48,7 +52,7 @@ class CipherBehavior extends ModelBehavior {
 		// Set valid values for config settings
 		$this->settings[$Model->name]['fields'] = (array) $this->settings[$Model->name]['fields'];
 		$this->settings[$Model->name]['autoDecrypt'] = (boolean) $this->settings[$Model->name]['autoDecrypt'];
-		$this->settings[$Model->name]['cipher'] = $this->_cipherMethod($Model->name);
+		$this->settings[$Model->name]['cipher'] = (string) $this->settings[$Model->name]['cipher'];
 	}
 
 /**
@@ -115,11 +119,11 @@ class CipherBehavior extends ModelBehavior {
  * @return string Encrypted value
  */
 	public function encrypt($value, $settings) {
-		if ($settings['cipher'] == 'cake') {
-			return Security::cipher($value, $settings['key']);
+		if ($settings['cipher'] == 'rijndael') {
+			return Security::rijndael($value, $settings['key'], 'encrypt');
 		}
 
-		return base64_encode(mcrypt_encrypt(MCRYPT_RIJNDAEL_256, md5($settings['key']), $value, MCRYPT_MODE_CBC, md5(md5($settings['key']))));
+		return Security::encrypt($value, $settings['key'], $settings['hmacSalt']);
 	}
 
 /**
@@ -130,11 +134,11 @@ class CipherBehavior extends ModelBehavior {
  * @return string Decrypted value
  */
 	public function decrypt($value, $settings) {
-		if ($settings['cipher'] == 'cake') {
-			return Security::cipher($value, $settings['key']);
+		if ($settings['cipher'] == 'rijndael') {
+			return Security::cipher($value, $settings['key'], 'decrypt');
 		}
 
-		return rtrim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, md5($settings['key']), base64_decode($value), MCRYPT_MODE_CBC, md5(md5($settings['key']))), "\0");
+		return Security::decrypt($value, $settings['key'], $settings['hmacSalt']);
 	}
 
 /**
@@ -145,26 +149,6 @@ class CipherBehavior extends ModelBehavior {
 	private function _cipherSeedValidates() {
 		$seed = Configure::read('Security.cipherSeed');
 		return ($seed && is_numeric($seed));
-	}
-
-/**
- * Get chosen cipher method
- *
- * @param string $modelName Name of current model
- * @return string (mcrypt|cake) Chosen cipher method
- */
-	private function _cipherMethod($modelName) {
-		if ($this->settings[$modelName]['cipher'] == 'auto') {
-			if (function_exists('mcrypt_module_open')) {
-				return 'mcrypt';
-			}
-		}
-
-		if ($this->settings[$modelName]['cipher'] == 'mcrypt') {
-			return 'mcrypt';
-		}
-
-		return 'cake';
 	}
 
 }
