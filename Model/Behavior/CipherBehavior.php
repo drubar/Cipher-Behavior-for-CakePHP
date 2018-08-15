@@ -119,6 +119,9 @@ class CipherBehavior extends ModelBehavior {
  * @return string Encrypted value
  */
 	public function encrypt($value, $settings) {
+	    if ($value == NULL) {
+	        return NULL;
+        }
 		if ($settings['cipher'] == 'rijndael') {
 			return Security::rijndael($value, $settings['key'], 'encrypt');
 		}
@@ -134,6 +137,9 @@ class CipherBehavior extends ModelBehavior {
  * @return string Decrypted value
  */
 	public function decrypt($value, $settings) {
+	    if ($value == NULL) {
+	        return NULL;
+        }
 		if ($settings['cipher'] == 'rijndael') {
 			return Security::cipher($value, $settings['key'], 'decrypt');
 		}
